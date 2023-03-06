@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client Websocket Test</title>
+    <style type="text/css">
+      html {
+        overflow: hidden;
+      }
+
+      body {
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: gray;
+      }
+
+      #log {
+        background: white;
+        margin: 0;
+        padding: 0.5em 0.5em 0.5em 0.5em;
+        position: absolute;
+        top: 0.5em;
+        left: 0.5em;
+        right: 0.5em;
+        bottom: 3em;
+        overflow: auto;
+      }
+
+      #form {
+        padding: 0 0.5em 0 0.5em;
+        margin: 0;
+        position: absolute;
+        bottom: 1em;
+        left: 0px;
+        width: 100%;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="log"></div>
+    <form id="form">
+      <input type="submit" value="send" />
+      <input type="text" id="msg" size="64" autofocus />
+    </form>
+  </body>
+  <script type="text/javascript">
+    window.onload = function () {
+      let conn;
+      let log = document.getElementById("log");
+
+      function appendLog(item) {
+        let doScroll = log.scrollTop > log.scrollHeight - log.clientHeight;
+        log.appendChild(item);
+        if (doScroll) {
+          log.scrollTop = log.scrollHeight = log.clientHeight;
+        }
+      }
+
+      if (window["WebSocket"]) {
+        const queryString = window.location.search;
+        console.log(queryString);
+        const urlParams = new URLSearchParams(queryString);
+        const uid = urlParams.get("uid");
+        const to_uid = urlParams.get("to_uid");
+
+        conn = new WebSocket(
+          "ws://" +
+            document.location.host +
+            "/ws?uid=" +
+            uid +
+            "&to_uid=" +
+            to_uid
+        );
+        conn.onclose = function (evt) {
+          let item = document.createElement("div");
+          item.innerHTML = "<b>Connection closed.</b>";
+          appendLog(item);
+        };
+        conn.onmessage = function (evt) {
+          let message = evt.data.split("\n");
+          for (let i = 0; i < message.length; i++) {
+            let item = document.createElement("div");
+            item.innerText = message[i];
+            appendLog(item);
+          }
+        };
+      } else {
+        let item = document.createElement("div");
+        item.innerHTML = "<b>Your browser does not support websockets</b>";
+        appendLog(item);
+      }
+
+      let msg = document.getElementById("msg");
+      document.getElementById("form").onsubmit = function () {
+        if (!conn) {
+          return false;
+        }
+        if (!msg.value) {
+          return false;
+        }
+        conn.send(msg.value);
+        msg.value = "";
+        return false;
+      };
+    };
+  </script>
+</html>
